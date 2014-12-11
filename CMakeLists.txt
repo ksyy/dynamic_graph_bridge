@@ -37,6 +37,7 @@ set(CUSTOM_HEADER_DIR dynamic_graph_bridge)
 set(${PROJECT_NAME}_HEADERS
   include/dynamic_graph_bridge/ros_init.hh
   include/dynamic_graph_bridge/ros_interpreter.hh
+  include/dynamic_graph_bridge/sot_loader.hh
   )
 include(cmake/base.cmake)
 include(cmake/ros.cmake)
@@ -110,6 +111,10 @@ endmacro()
 
 include(cmake/python.cmake)
 
+include_directories(${DYNAMIC_GRAPH_include_DIRS})
+link_directories(${DYNAMIC_GRAPH_LIBRARY_DIRS})
+MESSAGE("dyn graph include dirs:   ${DYNAMIC_GRAPH_include_DIRS}")
+
 compile_plugin(ros_publish)
 compile_plugin(ros_subscribe)
 compile_plugin(ros_time)
@@ -150,6 +155,13 @@ rospack_use_dependency(interpreter dynamic_graph_bridge_msgs)
 add_executable(geometric_simu src/geometric_simu.cpp src/sot_loader.cpp)
 pkg_config_use_dependency(geometric_simu roscpp)
 target_link_libraries(geometric_simu  ${Boost_LIBRARIES} dl)
+add_dependencies(geometric_simu ros_interpreter)
+target_link_libraries(geometric_simu ros_interpreter)
+
+# sot_loader library
+add_library(sot_loader src/sot_loader.cpp)
+install(TARGETS sot_loader DESTINATION ${CMAKE_INSTALL_LIBDIR}) 
+
 
 add_subdirectory(src)
 
