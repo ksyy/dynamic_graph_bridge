@@ -152,16 +152,17 @@ rospack_use_dependency(interpreter dynamic_graph_bridge_msgs)
 #install(TARGETS interpreter DESTINATION bin)
 
 # Stand alone embedded intepreter with a robot controller.
-add_executable(geometric_simu src/geometric_simu.cpp src/sot_loader.cpp)
-pkg_config_use_dependency(geometric_simu roscpp)
 target_link_libraries(geometric_simu  ${Boost_LIBRARIES} dl)
 add_dependencies(geometric_simu ros_interpreter)
 target_link_libraries(geometric_simu ros_interpreter)
 
 # sot_loader library
 add_library(sot_loader src/sot_loader.cpp)
-install(TARGETS sot_loader DESTINATION ${CMAKE_INSTALL_LIBDIR}) 
-
+pkg_config_use_dependency(sot_loader dynamic-graph)
+pkg_config_use_dependency(sot_loader sot-core)
+target_link_libraries(sot_loader  ${Boost_LIBRARIES})
+set_target_properties(sot_loader PROPERTIES BUILD_WITH_INSTALL_RPATH True)
+install(TARGETS sot_loader DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 add_subdirectory(src)
 
