@@ -34,7 +34,7 @@ boost::mutex mut;
 
 
 using namespace std;
-using namespace dynamicgraph::sot; 
+using namespace dynamicgraph::sot;
 namespace po = boost::program_options;
 
 
@@ -43,14 +43,15 @@ void createRosSpin(SotLoader *aSotLoader)
   ROS_INFO("createRosSpin started\n");
   ros::NodeHandle n;
 
-  ros::ServiceServer service = n.advertiseService("start_dynamic_graph", 
+  ros::ServiceServer service = n.advertiseService("start_dynamic_graph",
                                                   &SotLoader::start_dg,
                                                   aSotLoader);
 
-  ros::ServiceServer service2 = n.advertiseService("stop_dynamic_graph", 
+  ros::ServiceServer service2 = n.advertiseService("stop_dynamic_graph",
                                                   &SotLoader::stop_dg,
                                                   aSotLoader);
-  
+
+
   ros::waitForShutdown();
 }
 
@@ -60,7 +61,8 @@ void workThreadLoader(SotLoader *aSotLoader)
   while(aSotLoader->isDynamicGraphStopped())
     {
       usleep(5000);
-    }  
+    }
+
   while(!aSotLoader->isDynamicGraphStopped())
     {
       aSotLoader->oneIteration();
@@ -125,19 +127,19 @@ int SotLoader::readSotVectorStateParam()
       ROS_ASSERT(joint_state_parallel.getType() == XmlRpc::XmlRpcValue::TypeStruct);
       std::cout << "Type of joint_state_parallel:" << joint_state_parallel.getType() << std::endl;
 
-      for(XmlRpc::XmlRpcValue::iterator it = joint_state_parallel.begin(); 
-          it!= joint_state_parallel.end(); it++) 
+      for(XmlRpc::XmlRpcValue::iterator it = joint_state_parallel.begin();
+          it!= joint_state_parallel.end(); it++)
         {
           XmlRpc::XmlRpcValue local_value=it->second;
-          std::string final_expression, map_expression = static_cast<string>(local_value); 
+          std::string final_expression, map_expression = static_cast<string>(local_value);
           double final_coefficient = 1.0;
-          // deal with sign 
+          // deal with sign
           if (map_expression[0]=='-')
             {
               final_expression = map_expression.substr(1,map_expression.size()-1);
               final_coefficient = -1.0;
             }
-          else 
+          else
             final_expression = map_expression;
 
           std::cout <<it->first.c_str() << ": " << final_coefficient << std::endl;
@@ -154,7 +156,7 @@ int SotLoader::readSotVectorStateParam()
 
   // Fill in the name of the joints from the state vector.
   // and build local map from state name to state vector
-  for (int32_t i = 0; i < stateVectorMap_.size(); ++i) 
+  for (int32_t i = 0; i < stateVectorMap_.size(); ++i)
    {
      joint_state_.name[i]= static_cast<string>(stateVectorMap_[i]);
 
@@ -174,23 +176,23 @@ int SotLoader::readSotVectorStateParam()
     }
 
   angleEncoder_.resize(nbOfJoints_);
-  
+
   return 0;
 }
 
 
 int SotLoader::parseOptions(int argc, char *argv[])
-{ 
+{
   po::options_description desc("Allowed options");
   desc.add_options()
     ("help", "produce help message")
     ("input-file", po::value<string>(), "library to load")
     ;
-    
-  
+
+
   po::store(po::parse_command_line(argc, argv, desc), vm_);
-  po::notify(vm_);    
-  
+  po::notify(vm_);
+
   if (vm_.count("help")) {
     cout << desc << "\n";
     return -1;
@@ -201,14 +203,14 @@ int SotLoader::parseOptions(int argc, char *argv[])
   }
   else
     dynamicLibraryName_= vm_["input-file"].as< string >();
-  
+
   Initialization();
   return 0;
 }
 
 void SotLoader::Initialization()
 {
-  
+
   // Load the SotRobotBipedController library.
   void * SotRobotControllerLibrary = dlopen( dynamicLibraryName_.c_str(),
                                              RTLD_LAZY | RTLD_GLOBAL );
@@ -216,20 +218,20 @@ void SotLoader::Initialization()
     std::cerr << "Cannot load library: " << dlerror() << '\n';
     return ;
   }
-  
+
   // reset errors
   dlerror();
-  
+
   // Load the symbols.
   createSotExternalInterface_t * createSot =
-    (createSotExternalInterface_t *) dlsym(SotRobotControllerLibrary, 
+    (createSotExternalInterface_t *) dlsym(SotRobotControllerLibrary,
                           "createSotExternalInterface");
   const char* dlsym_error = dlerror();
   if (dlsym_error) {
     std::cerr << "Cannot load symbol create: " << dlsym_error << '\n';
     return ;
   }
-  
+
   // Create robot-controller
   sotController_ = createSot();
   ROS_INFO("Went out from Initialization.");
@@ -246,7 +248,6 @@ void SotLoader::initializeRosNode(int argc, char *argv[])
   ROS_INFO("Ready to start dynamic graph.");
 
   boost::unique_lock<boost::mutex> lock(mut);
- 
   boost::thread thr2(createRosSpin,this);
 
   startControlLoop();
@@ -254,23 +255,24 @@ void SotLoader::initializeRosNode(int argc, char *argv[])
 }
 
 
-void 
+
+void
 SotLoader::fillSensors(map<string,dgs::SensorValues> & sensorsIn)
 {
-  
+
   // Update joint values.w
   sensorsIn["joints"].setName("angle");
   for(unsigned int i=0;i<angleControl_.size();i++)
     angleEncoder_[i] = angleControl_[i];
   sensorsIn["joints"].setValues(angleEncoder_);
-  
+
 }
 
-void 
+void
 SotLoader::readControl(map<string,dgs::ControlValues> &controlValues)
 {
 
-  
+
   // Update joint values.
   angleControl_ = controlValues["joints"].getValues();
 
@@ -283,52 +285,52 @@ SotLoader::readControl(map<string,dgs::ControlValues> &controlValues)
     }
 
   // Publish the data.
-  joint_state_.header.stamp = ros::Time::now();  
+  joint_state_.header.stamp = ros::Time::now();
   for(int i=0;i<nbOfJoints_;i++)
     {
       joint_state_.position[i] = angleControl_[i];
     }
   for(unsigned int i=0;i<parallel_joints_to_state_vector_.size();i++)
     {
-      joint_state_.position[i+nbOfJoints_] = 
+      joint_state_.position[i+nbOfJoints_] =
         coefficient_parallel_joints_[i]*angleControl_[parallel_joints_to_state_vector_[i]];
     }
 
-  joint_pub_.publish(joint_state_);  
+  joint_pub_.publish(joint_state_);
 
-  
+
 }
 
 void SotLoader::setup()
 {
   fillSensors(sensorsIn_);
   sotController_->setupSetSensors(sensorsIn_);
-  sotController_->getControl(controlValues_); 
-  readControl(controlValues_); 
+  sotController_->getControl(controlValues_);
+  readControl(controlValues_);
 }
 
 void SotLoader::oneIteration()
 {
   fillSensors(sensorsIn_);
-  try 
+  try
     {
       sotController_->nominalSetSensors(sensorsIn_);
       sotController_->getControl(controlValues_);
-    } 
-  catch(std::exception &e) { throw e;} 
-  
+    }
+  catch(std::exception &e) { throw e;}
+
   readControl(controlValues_);
 }
 
 
-bool SotLoader::start_dg(std_srvs::Empty::Request& request, 
+bool SotLoader::start_dg(std_srvs::Empty::Request& request,
                          std_srvs::Empty::Response& response)
 {
-  dynamic_graph_stopped_=false;    
+  dynamic_graph_stopped_=false;
   return true;
 }
 
-bool SotLoader::stop_dg(std_srvs::Empty::Request& request, 
+bool SotLoader::stop_dg(std_srvs::Empty::Request& request,
                          std_srvs::Empty::Response& response)
 {
   dynamic_graph_stopped_ = true;
