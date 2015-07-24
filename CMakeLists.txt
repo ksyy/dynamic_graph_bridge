@@ -75,6 +75,7 @@ add_library(ros_bridge
 pkg_config_use_dependency(ros_bridge jrl-mal)
 pkg_config_use_dependency(ros_bridge bullet)
 rospack_use_dependency(ros_bridge dynamic_graph_bridge_msgs)
+pkg_config_use_dependency(ros_bridge roscpp)
 install(TARGETS ros_bridge DESTINATION lib)
 
 # Make sure rpath are preserved during the install as ROS dependencies
@@ -131,13 +132,11 @@ pkg_config_use_dependency(ros_interpreter dynamic-graph)
 pkg_config_use_dependency(ros_interpreter sot-core)
 pkg_config_use_dependency(ros_interpreter roscpp)
 rospack_use_dependency(ros_interpreter dynamic_graph_bridge_msgs)
-
-add_dependencies(ros_interpreter ros_bridge)
 target_link_libraries(ros_interpreter ros_bridge)
 set_target_properties(ros_interpreter PROPERTIES BUILD_WITH_INSTALL_RPATH True
                       LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 message(cmakeinstalllibdir ${CMAKE_INSTALL_LIBDIR} )
-install(TARGETS ros_interpreter DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS ros_interpreter DESTINATION lib)
 
 # Stand alone remote dynamic-graph Python interpreter.
 add_executable(interpreter src/interpreter.cpp)
@@ -148,21 +147,25 @@ pkg_config_use_dependency(interpreter dynamic-graph)
 pkg_config_use_dependency(interpreter sot-core)
 pkg_config_use_dependency(interpreter sot-dynamic)
 rospack_use_dependency(interpreter dynamic_graph_bridge_msgs)
+rospack_use_dependency(interpreter roscpp)
 # set_target_properties(interpreter PROPERTIES BUILD_WITH_INSTALL_RPATH True)
 #install(TARGETS interpreter DESTINATION bin)
 
-# Stand alone embedded intepreter with a robot controller.
-target_link_libraries(geometric_simu  ${Boost_LIBRARIES} dl)
-add_dependencies(geometric_simu ros_interpreter)
-target_link_libraries(geometric_simu ros_interpreter)
 
 # sot_loader library
 add_library(sot_loader src/sot_loader.cpp)
-pkg_config_use_dependency(sot_loader dynamic-graph)
 pkg_config_use_dependency(sot_loader sot-core)
 target_link_libraries(sot_loader  ${Boost_LIBRARIES})
+target_link_libraries(sot_loader roscpp)
+target_link_libraries(sot_loader ros_bridge)
 set_target_properties(sot_loader PROPERTIES BUILD_WITH_INSTALL_RPATH True)
-install(TARGETS sot_loader DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(TARGETS sot_loader DESTINATION lib)
+
+# Stand alone embedded intepreter with a robot controller.
+add_executable(geometric_simu src/geometric_simu.cpp)
+target_link_libraries(geometric_simu  ${Boost_LIBRARIES} dl sot_loader)
+add_dependencies(geometric_simu ros_interpreter)
+target_link_libraries(geometric_simu ros_interpreter)
 
 add_subdirectory(src)
 
