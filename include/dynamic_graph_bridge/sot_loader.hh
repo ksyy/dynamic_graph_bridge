@@ -20,6 +20,9 @@
 /* --- INCLUDES ------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
+#ifndef _SOT_LOADER_HH_
+#define _SOT_LOADER_HH_
+
 // System includes
 #include <iostream>
 #include <cassert>
@@ -152,3 +155,4 @@ public:
 
 };
 
+#endif /* _SOT_LOADER_HH_ */
